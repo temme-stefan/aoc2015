@@ -1,0 +1,23 @@
+{
+  "name": "aoc2015",
+  "version": "1.0.0",
+  "description": "AdventOfCode 2015 https://adventofcode.com/2015",
+  "keywords": [],
+  "author": "Stefan Temme",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "createDay": "tsx scripts/createDay.ts",
+    "showLeader": "tsx scripts/leaderBoard.ts",
+    "run": "tsx"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^27.0.0",
+    "@types/node": "^24.10.1",
+    "tsx": "^latest"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "jsdom": "^27.2.0"
+  }
+}
