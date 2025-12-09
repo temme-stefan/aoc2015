@@ -52,7 +52,9 @@ type TResult = {
 
 const doFight = (player: TPlayer22, boss: TBoss, effects: TEffect[], spendMana: number, playedEffects: string[], hard: boolean) => {
     let result: TResult[] = [];
-    for (const effect of availableEffects) {
+    const validEffects = availableEffects.filter(effect => effect.cost <= player.mana &&
+        !effects.find(e => e.timer>1 && e.name === effect.name));
+    for (const effect of  validEffects) {
         //Players turn first
         const p = {...player}
         const b = {...boss}
@@ -73,15 +75,6 @@ const doFight = (player: TPlayer22, boss: TBoss, effects: TEffect[], spendMana: 
         }
 
         handleEffects(p, b, runningEffects);
-        if (effect.cost > player.mana) {
-            result.push({
-                winner: 'boss',
-                player: p,
-                boss: b,
-                reason: "not enough mana"
-            })
-            continue;
-        }
         p.mana -= effect.cost;
         mana += effect.cost;
         switch (effect.name) {
@@ -95,17 +88,7 @@ const doFight = (player: TPlayer22, boss: TBoss, effects: TEffect[], spendMana: 
             case "Shield":
             case "Poison":
             case "Recharge":
-                if (runningEffects.find(e => e.name === effect.name)) {
-                    result.push({
-                        winner: 'boss',
-                        player: p,
-                        boss: b,
-                        reason: "effect already running"
-                    })
-                    continue;
-                } else {
-                    runningEffects.push({...effect});
-                }
+                runningEffects.push({...effect});
                 break;
             default:
                 console.warn('Unknown effect:', effect.name);
@@ -192,7 +175,11 @@ const fight22 = (player: TPlayer22, boss: TBoss, hard: boolean = false) => {
             if (res.winner === 'player' && res.spendMana < min) {
                 min = res.spendMana;
                 console.log("New minimum found:", min, "with effects:", res.playedEffects);
-                states = states.filter(({manaSpent,boss,effects })=> manaSpent + minPossibleMana(boss, effects) >= min);
+                states = states.filter(({
+                                            manaSpent,
+                                            boss,
+                                            effects
+                                        }) => manaSpent + minPossibleMana(boss, effects) >= min);
 
 
             } else if (res.winner === 'none') {
