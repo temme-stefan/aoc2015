@@ -3,12 +3,12 @@ type TPlayer22 = { hp: number, damage: number, mana: number, armor: number };
 type TEffect = { name: string, timer: number, cost: number };
 
 const availableEffects = [
-    {name: "Shield", timer: 6, cost: 113},
-    {name: "Poison", timer: 6, cost: 173},
-    {name: "Recharge", timer: 5, cost: 229},
     {name: "Magic Missile", timer: 0, cost: 53},
     {name: "Drain", timer: 0, cost: 73},
-].sort((a, b) => a.cost - b.cost);
+    {name: "Shield", timer: 6, cost: 113},
+    {name: "Poison", timer: 6, cost: 173},
+    {name: "Recharge", timer: 5, cost: 229}
+];
 
 const handleEffects = (player: TPlayer22, boss: TBoss, effects: TEffect[]) => {
     for (let i = effects.length - 1; i >= 0; i--) {
@@ -50,7 +50,7 @@ type TResult = {
     playedEffects?: string[]
 }
 
-const doFight = (player: TPlayer22, boss: TBoss, effects: TEffect[], spendMana: number, playedEffects:string[], hard:boolean) => {
+const doFight = (player: TPlayer22, boss: TBoss, effects: TEffect[], spendMana: number, playedEffects: string[], hard: boolean) => {
     let result: TResult[] = [];
     for (const effect of availableEffects) {
         //Players turn first
@@ -59,7 +59,7 @@ const doFight = (player: TPlayer22, boss: TBoss, effects: TEffect[], spendMana: 
         const runningEffects: TEffect[] = effects.map(e => ({...e}));
         const played = [...playedEffects, effect.name];
         let mana = spendMana;
-        if (hard){
+        if (hard) {
             p.hp--;
             if (p.hp <= 0) {
                 result.push({
@@ -159,8 +159,8 @@ const doFight = (player: TPlayer22, boss: TBoss, effects: TEffect[], spendMana: 
     return result;
 }
 
-const fight22 = (player: TPlayer22, boss: TBoss, hard:boolean=false) => {
-    const states = [{
+const fight22 = (player: TPlayer22, boss: TBoss, hard: boolean = false) => {
+    let states = [{
         player: {...player},
         boss: {...boss},
         effects: [] as TEffect[],
@@ -168,33 +168,45 @@ const fight22 = (player: TPlayer22, boss: TBoss, hard:boolean=false) => {
         playedEffects: [] as string[]
     }];
     let min = Number.MAX_SAFE_INTEGER;
+    // Minimales Mana um Boss zu besiegen (untere Schranke)
+    const minPossibleMana = (boss: TBoss, effects: TEffect[]) => {
+        // Berechne Schaden durch laufende Poison-Effekte
+        const poisonEffect = effects.find(e => e.name === "Poison");
+        const poisonDamage = poisonEffect ? poisonEffect.timer * 3 : 0;
+
+        // Verbleibende HP nach Poison
+        const remainingHp = Math.max(0, boss.hp - poisonDamage);
+
+        // Minimales Mana für verbleibenden Schaden (Magic Missile: 53 Mana für 4 Schaden)
+        return Math.ceil(remainingHp / 4) * 53;
+    }
+
+    // Im Loop:
     while (states.length > 0) {
         const {player, boss, effects, manaSpent, playedEffects} = states.shift();
-        if (manaSpent>min) {
+        if (manaSpent + minPossibleMana(boss, effects) >= min) {
             continue;
         }
         const result = doFight(player, boss, effects, manaSpent, playedEffects, hard)
-        const winnerPartion = Map.groupBy(result, r => r.winner);
-        const playerWins = winnerPartion.get('player') || [];
-        const noneWins = winnerPartion.get('none') || [];
-        for (const playerWin of playerWins) {
-            // console.log("Player win found:", playerWin.playedEffects, "spending mana:", playerWin.spendMana);
-            if (playerWin.spendMana < min) {
-                min = playerWin.spendMana;
-                console.log ("New minimum found:", min, "with effects:", playerWin.playedEffects);
+        for (const res of result) {
+            if (res.winner === 'player' && res.spendMana < min) {
+                min = res.spendMana;
+                console.log("New minimum found:", min, "with effects:", res.playedEffects);
+                states = states.filter(({manaSpent,boss,effects })=> manaSpent + minPossibleMana(boss, effects) >= min);
+
+
+            } else if (res.winner === 'none') {
+                states.push({
+                    player: res.player,
+                    boss: res.boss,
+                    effects: res.effects || [],
+                    manaSpent: res.spendMana || 0,
+                    playedEffects: res.playedEffects || []
+                });
             }
-
-
         }
-        states.push(...noneWins.map(w => ({
-            player: w.player,
-            boss: w.boss,
-            effects: w.effects || [],
-            manaSpent: w.spendMana || 0,
-            playedEffects: w.playedEffects || []
-        })));
     }
-    console.log("Minimum mana to win:"+(hard?" hard ":""), min);
+    console.log("Minimum mana to win:" + (hard ? " hard " : ""), min);
 
 
 }
@@ -213,5 +225,6 @@ console.log("Stardata")
 const playerStar = {hp: 50, damage: 0, mana: 500, armor: 0};
 const bossStar = {hp: 71, damage: 10};
 fight22(playerStar, bossStar);
+console.timeLog("Stardata", "now Hard mode")
 fight22(playerStar, bossStar, true);
 console.timeEnd("Stardata");
