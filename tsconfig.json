@@ -2,7 +2,7 @@
   "include": ["./**/*.ts"],
   "compilerOptions": {
     "lib": [
-      "ES2024",
+      "ESNext",
       "dom"
     ],
     "esModuleInterop": true,
